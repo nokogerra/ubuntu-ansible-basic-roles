@@ -1,0 +1,104 @@
+# code: language=ansible
+---
+- name: "Make .rsync-filter file if needed"
+  ansible.builtin.template:
+    src: rsync-filter.j2
+    dest: "{{ item.source }}/.rsync-filter"
+  when: item.excludes is defined
+
+- name: "Generate find commands and put them into facts"
+  ansible.builtin.set_fact:
+    src_find_files: "{{ lookup('ansible.builtin.template', 'src_find_files.j2') }}"
+    dest_find_files: "{{ lookup('ansible.builtin.template', 'dest_find_files.j2') }}"
+    src_find_dirs: "{{ lookup('ansible.builtin.template', 'src_find_dirs.j2') }}"
+    dest_find_dirs: "{{ lookup('ansible.builtin.template', 'dest_find_dirs.j2') }}"
+
+- name: "Show find commands"
+  ansible.builtin.debug:
+    msg: |
+      {{ src_find_files }}
+      {{ dest_find_files }}
+      {{ src_find_dirs }}
+      {{ dest_find_dirs }}
+
+- name: "Get source directory files count"
+  ansible.builtin.shell: "{{ src_find_files }}"
+  register: source_files
+
+- name: "Get source directory sub-directories count"
+  ansible.builtin.shell: "{{ src_find_dirs }}"
+  register: source_directories
+
+#- name: "Show source files and directories count"
+#  ansible.builtin.debug:
+#    msg: |
+#      {{ source_files.stdout.split()[0] | int }}
+#      {{ source_directories.stdout.split()[0] | int }}
+- name: "Remove lost+found directory from the destination dir if it is present"
+  ansible.builtin.file:
+    path: "{{ item.dest }}/lost+found"
+    state: absent
+
+- name: "Synchronize source and destination data"
+  ansible.posix.synchronize:
+    src: "{{ item.source }}/"
+    dest: "{{ item.dest }}"
+    compress: false
+    rsync_opts:
+      - "--archive"
+      - "--one-file-system"
+      - "--quiet"
+      - "--partial"
+      - "--progress"
+      - "--hard-links"
+  delegate_to: "{{ inventory_hostname }}"
+
+- name: "Get destination directory files count"
+  ansible.builtin.shell: "{{ dest_find_files }}"
+  register: dest_files
+
+- name: "Get destination directory sub-directories count"
+  ansible.builtin.shell: "{{ dest_find_dirs }}"
+  register: dest_directories
+
+- name: "Success message"
+  ansible.builtin.debug:
+    msg: |
+      Destination files number and sub-directories number are greater or equal the source corresponding measurements. It seems everything is OK.
+      Source files number is {{ source_files.stdout.split()[0] | int }} - Destination files number is {{ dest_files.stdout.split()[0] | int }}
+      Source sub-directories number is {{ source_directories.stdout.split()[0] | int }} - Destination sub-directories number is {{ dest_directories.stdout.split()[0] | int }}
+  when:
+    - ( dest_files.stdout.split()[0] | int ) >= ( source_files.stdout.split()[0] | int )
+    - ( dest_directories.stdout.split()[0] | int ) >= ( source_directories.stdout.split()[0] | int )
+
+- name: "Error message"
+  ansible.builtin.debug:
+    msg: |
+      WARNING!!! One of the destination measurements is fewer than the source one!!!
+      Source files number is {{ source_files.stdout.split()[0] | int }} - Destination files number is {{ dest_files.stdout.split()[0] | int }}
+      Source sub-directories number is {{ source_directories.stdout.split()[0] | int }} - Destination sub-directories number is {{ dest_directories.stdout.split()[0] | int }}
+  when:
+    - ( dest_files.stdout.split()[0] | int ) < ( source_files.stdout.split()[0] | int ) or
+      ( dest_directories.stdout.split()[0] | int ) < ( source_directories.stdout.split()[0] | int )
+
+- name: "Collect ansible facts"
+  ansible.builtin.setup:
+
+- debug:
+    msg: "{{ ansible_facts['mounts'] }}"
+
+- name: "Get current destination mount info"
+  ansible.builtin.set_fact:
+    current_mount_info: "{{ ansible_facts['mounts'] | selectattr('mount', '==', item.dest) | list }}"
+
+- name: "Remove current destination mount from /etc/fstab"
+  ansible.builtin.lineinfile:
+    path: /etc/fstab
+    state: absent
+    regexp: "{{ item.dest }}"
+
+- name: "Make the new mount point for the system directory"
+  ansible.builtin.lineinfile:
+    path: /etc/fstab
+    state: present
+    line: "UUID={{ current_mount_info[0].uuid }} {{ item.source }} {{ current_mount_info[0].fstype }} defaults 0 2"

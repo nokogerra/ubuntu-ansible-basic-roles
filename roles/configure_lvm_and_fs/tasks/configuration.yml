@@ -21,7 +21,7 @@
 
 - name: 'Mount file systems'
   ansible.posix.mount:
-    path: "/{{ item.mount_path }}"
+    path: "{{ item.mount_path }}"
     src: "/dev/mapper/{{ item.vg_name }}-{{ item.lvm_name }}"
     state: mounted
     fstype: "{{ item.fs_type }}"

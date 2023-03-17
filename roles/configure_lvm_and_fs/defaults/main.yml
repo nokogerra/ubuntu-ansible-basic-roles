@@ -3,7 +3,7 @@
 # Otherwise an LV path would be like "mydata1--vg-mydata1--lv", so linux will change single dash to the double one.
 # Underscore is a good choice to separate words in a LV name.
 ---
-storages:
+configure_lvm_and_fs_storages:
   - disk: sdb
     vg_name: mydata1_vg
     lvm_name: mydata1_lv
