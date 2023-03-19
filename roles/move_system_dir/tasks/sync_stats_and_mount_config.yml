@@ -16,10 +16,10 @@
 - name: "Show find commands"
   ansible.builtin.debug:
     msg: |
-      {{ src_find_files }}
-      {{ dest_find_files }}
-      {{ src_find_dirs }}
-      {{ dest_find_dirs }}
+      Command to get the source files number: {{ src_find_files }}
+      Command to get the destination files number: {{ dest_find_files }}
+      Command to get the source directories number: {{ src_find_dirs }}
+      Command to get the destination directories number: {{ dest_find_dirs }}
 
 - name: "Get source directory files count"
   ansible.builtin.shell: "{{ src_find_files }}"
@@ -29,11 +29,6 @@
   ansible.builtin.shell: "{{ src_find_dirs }}"
   register: source_directories
 
-#- name: "Show source files and directories count"
-#  ansible.builtin.debug:
-#    msg: |
-#      {{ source_files.stdout.split()[0] | int }}
-#      {{ source_directories.stdout.split()[0] | int }}
 - name: "Remove lost+found directory from the destination dir if it is present"
   ansible.builtin.file:
     path: "{{ item.dest }}/lost+found"
@@ -83,9 +78,6 @@
 
 - name: "Collect ansible facts"
   ansible.builtin.setup:
-
-- debug:
-    msg: "{{ ansible_facts['mounts'] }}"
 
 - name: "Get current destination mount info"
   ansible.builtin.set_fact:
