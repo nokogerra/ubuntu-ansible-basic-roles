@@ -14,21 +14,13 @@
         lvm_name: data2_lv
         fs_type: ext4
         mount_path: /data2
-      - disk: sdd
-        vg_name: mydata3_vg
-        lvm_name: mydata3_lv
-        fs_type: ext4
-        mount_path: /data3
     move_system_dir_config:
       - source: /var
         dest: /data1
         excludes:
           - /lib
-          - /snap
       - source: /var/lib
         dest: /data2
-      - source: /var/snap
-        dest: /data3
   roles:
     - configure_lvm_and_fs
     - move_system_dir
