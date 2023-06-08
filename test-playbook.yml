@@ -5,15 +5,15 @@
   vars:
     configure_lvm_and_fs_storages:
       - disk: sdb
-        vg_name: data1_vg
-        lvm_name: data1_lv
+        vg_name: nfs_vg
+        lvm_name: nfs_lv
         fs_type: ext4
-        mount_path: /data1
-      - disk: sdc
-        vg_name: data2_vg
-        lvm_name: data2_lv
-        fs_type: ext4
-        mount_path: /data2
+        mount_path: /nfs
+#      - disk: sdc
+#        vg_name: data2_vg
+#        lvm_name: data2_lv
+#        fs_type: ext4
+#        mount_path: /data2
     move_system_dir_config:
       - source: /var
         dest: /data1
@@ -21,6 +21,16 @@
           - /lib
       - source: /var/lib
         dest: /data2
+    nfs_server_exports:
+      - path: /nfs/export01
+        dir_permissions: "0777"
+        clients: "*"
+        read_write: rw
+        sync: sync
+        subtree: no_subtree_check
+        root_squash: no_root_squash
   roles:
-    - configure_lvm_and_fs
-    - move_system_dir
+    - mount_nfs
+#    - nfs_server
+#    - configure_lvm_and_fs
+#    - move_system_dir

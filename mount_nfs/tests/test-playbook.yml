@@ -1,0 +1,9 @@
+# code: language=ansible
+---
+- name: "Mount an NFS-export"
+  hosts: all
+  vars:
+    local_path: /nfs_vols
+    nfs_source: "10.215.102.2:/nfs/export01"
+  roles:
+    - mount_nfs

@@ -1,0 +1,15 @@
+# code: language=ansible
+---
+- name: "Configure a simple NFSv3 server"
+  hosts: all
+  vars:
+    nfs_server_exports:
+      - path: /nfs/export01
+        dir_permissions: "0777"
+        clients: "*"
+        read_write: rw
+        sync: sync
+        subtree: no_subtree_check
+        root_squash: no_root_squash
+  roles:
+    - nfs_server

@@ -1,5 +1,5 @@
 ### Move system directory from the first system disk to a separate LV/partition
-This role helps you to move a system directory (e.g. /var) or multiple directories to a separate logical volume(s) or partition (s). The main disadvantage of the role is that it doesn't clean up the original system directory location, so you are going to lose some disk space on the fisrt disk. We are considering to use this role basically on VMs, which are freshly deployed from a cloud image, so the waste of the disk space will be really insignificant.
+This role helps you to move a system directory (e.g. /var) or multiple directories to a separate logical volume(s) or partition(s). The main disadvantage of the role is that it doesn't clean up the original system directory location, so you are going to lose some disk space on the fisrt disk. We are considering to use this role basically on VMs, which are freshly deployed from a cloud image, so the waste of the disk space will be really insignificant.
 
 ## Requirements
 Your VM must already have a mounted file system (e.g. /data1), which is gonna be used as a destination point for the system directory data.

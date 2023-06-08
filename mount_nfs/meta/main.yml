@@ -2,7 +2,7 @@
 ---
 galaxy_info:
   author: "Anatoliy Kopylov"
-  description: "Move system directory (e.g. /var) to a separate volume"
+  description: "Mount an NFS export to a local directory"
   min_ansible_version: "2.14.3"
   license: BSD
   platforms:

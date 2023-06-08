@@ -1,0 +1,3 @@
+{% for n in nfs_server_exports -%}
+{{ n.path }} {{ n.clients }}({{ n.read_write }},{{ n.sync }},{{ n.subtree }},{{ n.root_squash }})
+{% endfor %}

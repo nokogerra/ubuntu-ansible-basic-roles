@@ -1,0 +1,27 @@
+# code: language=ansible
+---
+# Available export oprtions:
+# 1. path - a directory for an NFS-export;
+# 2. dir_permissions - directory permissions (4-digit or rwx format);
+# 3. clients - IP-addrs or hostnames which will have an access to the particular NFS-export, e.g. "*", "192.168.0.0/24"
+# 4. read_write - ro/rw;
+# 5. sync - sync or async. Sync means NFS-server acknowledges data only after flushing (destaging) it on a disk,
+# async - NFS-server acknowledges data immediately (before commiting it on a disk), data loss risk in case of no BBU;
+# 6. subtree - subtree_check or no_subtree_check, see https://linux.die.net/man/5/exports;
+# 7. root_squash - no_root_squash or root_squash, https://linux.die.net/man/5/exports.
+
+nfs_server_exports:
+  - path: /vol1/export1
+    dir_permissions: "0777"
+    clients: "10.215.0.0/16"
+    read_write: rw
+    sync: sync
+    subtree: no_subtree_check
+    root_squash: no_root_squash
+  - path: /vol1/export2
+    dir_permissions: "0644"
+    clients: "*"
+    read_write: rw
+    sync: async
+    subtree: no_subtree_check
+    root_squash: no_root_squash

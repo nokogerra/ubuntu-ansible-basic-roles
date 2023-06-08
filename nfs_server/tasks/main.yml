@@ -1,0 +1,44 @@
+# code: language=ansible
+---
+- name: "Make NFS export directory if it is not present"
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    mode: "{{ item.dir_permissions }}"
+  loop: "{{ nfs_server_exports }}"
+
+- name: "Install NFS packages"
+  ansible.builtin.apt:
+    name:
+      - nfs-kernel-server
+      - nfs-common
+    state: present
+    update_cache: true
+
+- name: "Enable NFSv3 and disable NFSv4"
+  ansible.builtin.lineinfile:
+    path: /etc/nfs.conf
+    insertafter: '\[nfsd\]'
+    line: "{{ item }}"
+  loop:
+    - 'vers3=y'
+    - 'vers4=n'
+    - 'vers4.0=n'
+    - 'vers4.1=n'
+    - 'vers4.2=n'
+  notify: Restart nfs-kernel-server
+
+- name: "Make sure NFS-server is enabled and started"
+  ansible.builtin.service:
+    name: "nfs-kernel-server"
+    state: started
+    enabled: true
+
+- name: "Configure exports"
+  ansible.builtin.template:
+    src: exports.j2
+    dest: /etc/exports
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload nfs
