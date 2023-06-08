@@ -1,4 +1,4 @@
 # code: language=ansible
 ---
-local_path: /nfs_vols
-nfs_source: "10.215.102.2:/nfs/export01"
+mount_nfs_local_path: /nfs_vols
+mount_nfs_nfs_source: "10.215.102.2:/nfs/export01"

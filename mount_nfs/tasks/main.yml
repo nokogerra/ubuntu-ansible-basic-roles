@@ -8,14 +8,25 @@
 
 - name: "Mount NFS export"
   ansible.posix.mount:
-    path: "{{ local_path }}"
-    src: "{{ nfs_source }}"
+    path: "{{ mount_nfs_local_path }}"
+    src: "{{ mount_nfs_nfs_source }}"
     fstype: nfs
     state: mounted
 
 - name: "Gather facts"
   ansible.builtin.setup:
 
+- name: "Set nfs_mounts fact"
+  ansible.builtin.set_fact:
+    nfs_mounts: "{{ ansible_facts['mounts'] | selectattr('fstype', 'match', 'nfs.*') }}"
+
 - name: "Show NFS mounts"
   ansible.builtin.debug:
-    msg: "{{ ansible_facts['mounts'] | selectattr('fstype', 'match', 'nfs.*') | list }}"
+    msg:
+      - "Mount point: {{ item.mount }}"
+      - "Filesystem: {{ item.fstype }}"
+      - "Size in GB: {{ (item.size_total / 1073741824) | round(1, 'common') }}"
+      - "Space available in GB: {{ (item.size_available / 1073741824) | round(1, 'common') }}"
+  loop: "{{ nfs_mounts }}"
+  loop_control:
+    label: "{{ item.uuid }}"

@@ -9,18 +9,6 @@
         lvm_name: nfs_lv
         fs_type: ext4
         mount_path: /nfs
-#      - disk: sdc
-#        vg_name: data2_vg
-#        lvm_name: data2_lv
-#        fs_type: ext4
-#        mount_path: /data2
-    move_system_dir_config:
-      - source: /var
-        dest: /data1
-        excludes:
-          - /lib
-      - source: /var/lib
-        dest: /data2
     nfs_server_exports:
       - path: /nfs/export01
         dir_permissions: "0777"
@@ -29,8 +17,10 @@
         sync: sync
         subtree: no_subtree_check
         root_squash: no_root_squash
+    mount_nfs_local_path: /nfs_vols
+    mount_nfs_nfs_source: "10.215.102.2:/nfs/export01"
   roles:
     - mount_nfs
-#    - nfs_server
 #    - configure_lvm_and_fs
+#    - nfs_server
 #    - move_system_dir
