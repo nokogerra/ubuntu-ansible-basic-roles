@@ -19,38 +19,10 @@
     update_cache: true
   when: install_nginx_version is defined
 
-- name: "Update apt cache"
+- name: "Install nginx latest if version is not specified"
   ansible.builtin.apt:
-    update_cache: true
-  when: install_nginx_version is not defined
-
-- name: "Get available nginx versions in nginx repository"
-  ansible.builtin.shell: "sudo apt-cache madison nginx | grep 'http://nginx'"
-  register: nginx_versions
-  when: install_nginx_version is not defined
-
-- name: "Show available nginx versions"
-  ansible.builtin.debug:
-    msg: "{{ nginx_versions.stdout_lines }}"
-  when: install_nginx_version is not defined
-
-- name: "Ask for nginx version to install"
-  ansible.builtin.pause:
-    prompt: "Enter the nginx version you want to install"
-    echo: true
-  register: nginx_ver
-  when: install_nginx_version is not defined
-
-- name: "Install nginx if version is not specified"
-  ansible.builtin.apt:
-    name: "nginx={{ nginx_ver.user_input }}"
+    name: "nginx"
     state: present
     allow_downgrade: true
     update_cache: true
   when: install_nginx_version is not defined
-
-- name: "Enable and start nginx"
-  ansible.builtin.service:
-    name: nginx
-    state: started
-    enabled: true
