@@ -1,0 +1,12 @@
+# code: language=ansible
+---
+galaxy_info:
+  author: "Anatoliy Kopylov"
+  description: "Install nginx"
+  min_ansible_version: "2.14.3"
+  license: BSD
+  platforms:
+    - name: Ubuntu
+      versions:
+        - jammy
+        - focal

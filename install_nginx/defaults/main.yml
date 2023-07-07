@@ -1,0 +1,7 @@
+# code: language=ansible
+---
+install_nginx_repo_key_url: "https://nginx.org/keys/nginx_signing.key"
+install_nginx_repo_key_file_path: "/usr/share/keyrings/nginx.gpg"
+install_nginx_repo_string: "deb [arch=amd64 signed-by=/usr/share/keyrings/nginx.gpg] http://nginx.org/packages/ubuntu {{ ansible_facts['distribution_release'] }} nginx"
+install_nginx_repo_file: nginx
+# install_nginx_version: ""
