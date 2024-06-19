@@ -1,0 +1,111 @@
+# code: language=ansible
+---
+- name: "Test if all the hosts are avilable from ansible perspective (ssh access test)"
+  ansible.builtin.ping:
+  any_errors_fatal: true
+
+- name: "Set hostname (FQDN is picked up from the inventory)"
+  ansible.builtin.hostname:
+    name: "{{ inventory_hostname }}"
+
+- name: "Edit /etc/hosts"
+  ansible.builtin.lineinfile:
+    path: /etc/hosts
+    regexp: "^{{ ansible_host }}"
+    line: "{{ ansible_host }} {{ inventory_hostname }} {{ inventory_hostname_short }}"
+    state: present
+
+# Reboot the server??????????????????????????????
+
+- name: "Test if DNS resolution works fine (resolve domain, the specific host and _ldap record)"
+  ansible.builtin.debug:
+    msg:
+      - "{{ query('community.dns.lookup', join_domain_domain_name, search=false, type='A', nxdomain_handling='fail') }}"
+      - "{{ query('community.dns.lookup', '_ldap._tcp.' + join_domain_domain_name, search=false, type='SRV', nxdomain_handling='fail') }}"
+      - "{{ query('community.dns.lookup', inventory_hostname, search=false, type='A', nxdomain_handling='fail') }}"
+  any_errors_fatal: true
+
+- name: "Add the company repository if needed"
+  ansible.builtin.apt_repository:
+    repo: "{{ join_domain_repository_string }}"
+    state: present
+    update_cache: true
+  when: join_domain_repository_string | length > 0
+
+- name: "Make sure libsasl2-modules are not installed (to avoid further conflicts with realmd/sssd, it will be installed with those components)"
+  ansible.builtin.apt:
+    name: libsasl2-modules
+    state: absent
+
+- name: "Install packages needed for joining a domain"
+  ansible.builtin.apt:
+    update_cache: true
+    name:
+      - adcli
+      - realmd
+      - sssd-ad
+      - sssd-tools
+      - sssd
+      # - libnss-sss
+      # - libpam-sss
+      # - oddjob
+      # - oddjob-mkhomedir
+      # - samba-common-bin
+
+- name: "Check the current list of realms (realm join operation will be performed only in case realm list is empty)"
+  ansible.builtin.command: realm list
+  register: realm_list_result
+  changed_when: false
+  ignore_errors: true
+
+- name: "Show current realms"
+  ansible.builtin.debug:
+    msg: "{{ realm_list_result.stdout }}"
+  when: realm_list_result.stdout_lines
+
+- name: "Test if OS is already joined to the desired domain (BLOCK)"
+  when: realm_list_result.stdout_lines and (join_domain_domain_name in realm_list_result.stdout_lines)
+  block:
+    - name: "Test if OS is already joined to the desired domain"
+      ansible.builtin.debug:
+        msg: "This OS is already joined domain {{ join_domain_domain_name }}! Stopping the play for the current host."
+
+    - name: "Stop the play for the current host"
+      ansible.builtin.meta: end_host
+
+- name: "Test if OS is already joined to some other NON-desired domain(s) (BLOCK)"
+  when: realm_list_result.stdout_lines and (join_domain_domain_name not in realm_list_result.stdout_lines)
+  block:
+    - name: "Test if OS is already joined to the desired domain"
+      ansible.builtin.debug:
+        msg: "This OS is already joined other domain(s)! Consider leaving the domain(s) first. Stopping the play for the current host."
+
+    - name: "Stop the play for the current host"
+      ansible.builtin.meta: end_host
+
+- name: "Join domain block"
+  when: not realm_list_result.stdout_lines
+  block:
+    - name: "Join domain"
+      changed_when: false
+      ansible.builtin.shell: >
+        "echo {{ join_domain_password }} | sudo realm join -v -U {{ join_domain_user }} --computer-ou
+        {{ join_domain_target_ou_dn }} --computer-name {{ inventory_hostname_short }}
+        --os-name {{ ansible_facts['distribution'] }} --os-version {{ ansible_facts['distribution_version'] }}
+        {{ join_domain_domain_name }}"
+      no_log: true
+      ignore_errors: true
+      register: join_result
+
+    - name: "Successful join message"
+      ansible.builtin.debug:
+        msg: "Successfully joined {{ join_domain_domain_name }}"
+      when: join_result.rc == 0
+
+    - name: "Failed join message"
+      ansible.builtin.debug:
+        msg: "FAILED to join {{ join_domain_domain_name }}!!!"
+      when: join_result.rc != 0
+
+- name: "Configure access control and sudoers"
+  when: 

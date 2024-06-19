@@ -21,6 +21,6 @@
     mount_nfs_nfs_source: "10.215.102.2:/nfs/export01"
   roles:
     - mount_nfs
-#    - configure_lvm_and_fs
-#    - nfs_server
-#    - move_system_dir
+    #- configure_lvm_and_fs
+    #- nfs_server
+    #- move_system_dir
