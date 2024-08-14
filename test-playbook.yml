@@ -5,10 +5,10 @@
   vars:
     configure_lvm_and_fs_storages:
       - disk: sdb
-        vg_name: nfs_vg
-        lvm_name: nfs_lv
+        vg_name: app_vg
+        lvm_name: app_lv
         fs_type: ext4
-        mount_path: /nfs
+        mount_path: /app
     nfs_server_exports:
       - path: /nfs/export01
         dir_permissions: "0777"
@@ -20,7 +20,7 @@
     mount_nfs_local_path: /nfs_vols
     mount_nfs_nfs_source: "10.215.102.2:/nfs/export01"
   roles:
-    - mount_nfs
-    #- configure_lvm_and_fs
+    # - mount_nfs
+    - configure_lvm_and_fs
     #- nfs_server
     #- move_system_dir

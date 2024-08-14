@@ -1,0 +1,10 @@
+# code: language=ansible
+---
+- name: "Restart SSSD"
+  ansible.builtin.service:
+    name: sssd
+    state: restarted
+
+- name: "Reboot machine"
+  ansible.builtin.reboot:
+    reboot_timeout: 600

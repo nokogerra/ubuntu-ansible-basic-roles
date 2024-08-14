@@ -9,13 +9,13 @@
     name: "{{ inventory_hostname }}"
 
 - name: "Edit /etc/hosts"
-  ansible.builtin.lineinfile:
-    path: /etc/hosts
-    regexp: "^{{ ansible_host }}"
-    line: "{{ ansible_host }} {{ inventory_hostname }} {{ inventory_hostname_short }}"
-    state: present
-
-# Reboot the server??????????????????????????????
+  ansible.builtin.template:
+    src: "hosts.j2"
+    dest: "/etc/hosts"
+    owner: root
+    group: root
+    mode: "0644"
+    backup: true
 
 - name: "Test if DNS resolution works fine (resolve domain, the specific host and _ldap record)"
   ansible.builtin.debug:
@@ -25,14 +25,14 @@
       - "{{ query('community.dns.lookup', inventory_hostname, search=false, type='A', nxdomain_handling='fail') }}"
   any_errors_fatal: true
 
-- name: "Add the company repository if needed"
+- name: "Add the company linux repository if needed"
   ansible.builtin.apt_repository:
     repo: "{{ join_domain_repository_string }}"
     state: present
     update_cache: true
   when: join_domain_repository_string | length > 0
 
-- name: "Make sure libsasl2-modules are not installed (to avoid further conflicts with realmd/sssd, it will be installed with those components)"
+- name: "Make sure libsasl2-modules are not installed (to avoid further conflicts with realmd/sssd, it will be installed later with those components)"
   ansible.builtin.apt:
     name: libsasl2-modules
     state: absent
@@ -88,12 +88,14 @@
   block:
     - name: "Join domain"
       changed_when: false
-      ansible.builtin.shell: >
-        "echo {{ join_domain_password }} | sudo realm join -v -U {{ join_domain_user }} --computer-ou
-        {{ join_domain_target_ou_dn }} --computer-name {{ inventory_hostname_short }}
-        --os-name {{ ansible_facts['distribution'] }} --os-version {{ ansible_facts['distribution_version'] }}
-        {{ join_domain_domain_name }}"
-      no_log: true
+      ansible.builtin.shell:
+        cmd: >
+          echo {{ join_domain_password }} | sudo /usr/sbin/realm join -v -U {{ join_domain_user }} --computer-ou
+          {{ join_domain_target_ou_dn }} --computer-name {{ inventory_hostname_short }}
+          --os-name {{ ansible_facts['distribution'] }} --os-version {{ ansible_facts['distribution_version'] }}
+          {{ join_domain_domain_name }}
+        executable: /bin/bash
+      no_log: false
       ignore_errors: true
       register: join_result
 
@@ -108,4 +110,59 @@
       when: join_result.rc != 0
 
 - name: "Configure access control and sudoers"
-  when: 
+  when: >
+    (join_domain_allow_login_groups | length > 0 and join_result.rc == 0)  or
+    (join_domain_allow_login_users | length > 0 and join_result.rc == 0) or
+    (join_domain_sudoers_groups_list | length > 0 and join_result.rc == 0)
+  notify:
+    - "Restart SSSD"
+  block:
+    - name: "Change access provider from \"ad\" to \"simple\""
+      ansible.builtin.lineinfile:
+        path: /etc/sssd/sssd.conf
+        regexp: '^access_provider'
+        line: 'access_provider = simple'
+        state: present
+
+    - name: "Configure AD GPO access control"
+      when: join_domain_ad_gpo_access | length > 0
+      ansible.builtin.lineinfile:
+        path: /etc/sssd/sssd.conf
+        regexp: '^ad_gpo_access_control'
+        line: 'ad_gpo_access_control = {{ join_domain_ad_gpo_access }}'
+        state: present
+
+    - name: Add use_fully_qualified_names line
+      ansible.builtin.lineinfile:
+        path: /etc/sssd/sssd.conf
+        regexp: '^use_fully_qualified_names'
+        line: 'use_fully_qualified_names = False'
+        state: present
+
+    - name: "Restrict SSSD login capabilities to the specified AD groups"
+      when: join_domain_allow_login_groups | length > 0
+      ansible.builtin.lineinfile:
+        path: /etc/sssd/sssd.conf
+        regexp: '^simple_allow_groups'
+        line: 'simple_allow_groups = {{ join_domain_allow_login_groups }}'
+        state: present
+
+    - name: "Restrict SSSD login capabilities to the specified AD users"
+      when: join_domain_allow_login_users | length > 0
+      ansible.builtin.lineinfile:
+        path: /etc/sssd/sssd.conf
+        regexp: '^simple_allow_users'
+        line: 'simple_allow_users = {{ join_domain_allow_login_users }}'
+        state: present
+
+    - name: "Configure AD groups as sudoers in file /etc/sudoers.d/sssd-groups"
+      when: join_domain_sudoers_groups_list | length > 0
+      ansible.builtin.template:
+        src: sudoers.j2
+        dest: /etc/sudoers.d/sssd-groups
+        owner: root
+        group: root
+        mode: '0400'
+
+- name: "Flush handlers"
+  ansible.builtin.meta: flush_handlers

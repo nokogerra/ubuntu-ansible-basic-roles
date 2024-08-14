@@ -2,5 +2,15 @@
 ---
 - name: "Join AD"
   hosts: all
+
+  pre_tasks:
+    - name: Check ALL hosts are reacheable before doing the release
+      assert:
+        that:
+          - ansible_play_hosts == ansible_play_hosts_all
+        fail_msg: "1 or more host is UNREACHABLE"
+        success_msg: "All hosts are reacheable, going on"
+      run_once: true
+
   roles:
     - join_domain

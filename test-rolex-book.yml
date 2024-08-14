@@ -1,0 +1,4 @@
+- name: test-roles-book
+  hosts: all
+  roles:
+    - test-rolex
