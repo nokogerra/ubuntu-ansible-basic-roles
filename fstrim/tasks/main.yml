@@ -1,0 +1,12 @@
+# code: language=ansible
+---
+- name: "Enable and configure fstrim.timer"
+  ansible.builtin.include_tasks: enable_fstrim.yml
+  when: fstrim_timer_enabled
+
+- name: "Disable and stop fstrim.timer"
+  ansible.builtin.include_tasks: disable_fstrim.yml
+  when: not fstrim_timer_enabled
+
+- name: "Get fstrim.timer state"
+  ansible.builtin.include_tasks: get_fstrim_state.yml

@@ -1,0 +1,19 @@
+# code: language=ansible
+---
+- name: "Configure fstrim.timer SystemD file (/lib/systemd/system/fstrim.timer)"
+  ansible.builtin.template:
+    src: fstrim.timer.j2
+    dest: /lib/systemd/system/fstrim.timer
+    owner: root
+    group: root
+    mode: '0644'
+  notify: "SystemD daemon reload"
+
+- name: "Trigger the handler"
+  ansible.builtin.meta: flush_handlers
+
+- name: "Enable and start fstrim.timer"
+  ansible.builtin.systemd:
+    name: fstrim.timer
+    state: restarted
+    enabled: true

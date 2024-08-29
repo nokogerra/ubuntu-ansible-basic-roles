@@ -1,0 +1,5 @@
+# code: language=ansible
+---
+- name: "SystemD daemon reload"
+  ansible.builtin.systemd:
+    daemon_reload: true

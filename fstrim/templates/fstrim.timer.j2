@@ -1,0 +1,14 @@
+# Modified by Ansible
+[Unit]
+Description=Discard unused blocks periodically
+Documentation=man:fstrim
+ConditionVirtualization=!container
+
+[Timer]
+OnCalendar={{ fstrim_calendar }}
+AccuracySec={{ fstrim_accuracy }}
+RandomizedDelaySec={{ fstrim_randomize_period }}
+Persistent={{ fstrim_timer_persistent }}
+
+[Install]
+WantedBy=timers.target

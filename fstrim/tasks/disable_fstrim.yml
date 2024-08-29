@@ -1,0 +1,7 @@
+# code: language=ansible
+---
+- name: "Disable and stop fstrim.timer"
+  ansible.builtin.systemd:
+    name: fstrim.timer
+    state: stopped
+    enabled: false

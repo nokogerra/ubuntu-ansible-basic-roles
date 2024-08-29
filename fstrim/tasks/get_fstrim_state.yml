@@ -1,0 +1,10 @@
+# code: language=ansible
+---
+- name: "Get fstrim.timer state"
+  ansible.builtin.systemd:
+    name: fstrim.timer
+  register: fstrim_timer_status
+
+- name: "Show fstrim.timer state"
+  ansible.builtin.debug:
+    var: fstrim_timer_status.status.ActiveState
