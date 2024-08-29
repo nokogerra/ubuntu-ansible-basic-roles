@@ -17,7 +17,7 @@ Also you can just try to use fstrim utility manually against a specific mountpoi
 sudo fstrim /
 fstrim: /: the discard operation is not supported
 ```
-If trim/discard is not supported inside a guest OS of vSphere VM, then it's probably a virtualization layer problem. E.g. space reclamation isn't enabled on a VMFS or vSAN layer.
+If trim/discard is not supported inside a guest OS of vSphere VM, then it's probably a virtualization layer problem. E.g. space reclamation isn't enabled on a VMFS or vSAN layer OR **the VM hardware version is too low** (e.g. in my case trim/discard didn't work on VM HW 10, which is the default VM HW for Ubuntu Focal/Jammy cloud image).
 
 ## Variables
 All the variables present in defaults.
